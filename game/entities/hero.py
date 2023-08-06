@@ -4,7 +4,16 @@ from game.settings import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS
 
 class Hero(Entity):
     def __init__(self):
-        super().__init__(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50, 50, 30, COLORS.get('GREEN'), 5, 1, True)
+        super().__init__(
+            SCREEN_WIDTH // 2,
+            SCREEN_HEIGHT - 50,
+            50,
+            30,
+            COLORS.get("GREEN"),
+            5,
+            1,
+            True,
+        )
 
     def move(self, direction):
         if direction == "left":
