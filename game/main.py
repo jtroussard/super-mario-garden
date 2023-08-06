@@ -1,15 +1,14 @@
-import pygame
 import sys
 import random
+import pygame
 
 from game.entities.hero import Hero
 from game.entities.enemy import Enemy
 from game.entities.bullet import Bullet
 
-from . import levels
+# from . import levels
+# from . import utils
 from . import settings
-from . import utils
-
 
 pygame.init()
 
@@ -71,7 +70,7 @@ while running:
         active_entity.move()
 
     # Release enemies
-    active_enemies = [enemy for entity in active_sprites if isinstance(entity, Enemy)]
+    active_enemies = [entity for entity in active_sprites if isinstance(entity, Enemy)]
     if current_time - last_enemy_release_time >= 3000:
         if len(active_enemies) < settings.MAX_ACTIVE_ENEMY_COUNT:
             enemy = Enemy(
@@ -89,7 +88,8 @@ while running:
     # the messages on the screen
     time_text = font.render(f"Time: {current_time}", True, (255, 255, 255))
     active_enemies_text = font.render(
-        f"Active enemies vs. All: {len(active_enemies)}/{len(pygame.sprite.Group.sprites(all_sprites))}",
+        f"Active enemies vs. All:\
+            {len(active_enemies)}/{len(pygame.sprite.Group.sprites(all_sprites))}",
         True,
         (255, 255, 255),
     )
