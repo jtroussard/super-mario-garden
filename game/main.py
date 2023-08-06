@@ -10,6 +10,7 @@ from game.entities.bullet import Bullet
 # from . import utils
 from . import settings
 
+
 pygame.init()
 
 screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
@@ -103,7 +104,23 @@ while running:
     all_sprites.update()
 
     # Draw
-    screen.fill(settings.COLORS.get("BLACK"))
+    screen.fill(settings.COLORS.get("BLACK")) # Don't move me
+
+    # grids
+    center_x = settings.SCREEN_WIDTH // 2
+    center_y = settings.SCREEN_HEIGHT // 2
+    pygame.draw.line(screen, (settings.COLORS.get('WHITE')), (center_x, 0), (center_x, settings.SCREEN_HEIGHT))
+    pygame.draw.line(screen, (settings.COLORS.get('WHITE')), (0, center_y), (settings.SCREEN_WIDTH, center_y))
+
+
+    red = (200,0,0)
+
+    circleX = 100
+    circleY = 100
+    radius = 10
+    pygame.draw.circle(screen,red,(circleX,circleY),radius) # DRAW CIRCLE
+
+
     active_sprites.draw(screen)
     screen.blit(time_text, (10, 10))
     screen.blit(active_enemies_text, (10, 40))
