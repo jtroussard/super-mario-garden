@@ -4,13 +4,13 @@ from game.settings import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS
 
 default_height = 20
 default_width = 70
-default_head_height = 20
+default_head_height = 120
 
 class Hero(Entity):
     def __init__(self):
         super().__init__(
             ((SCREEN_WIDTH // 2) - (default_width // 2)),
-            SCREEN_HEIGHT - 120,
+            SCREEN_HEIGHT - default_head_height,
             default_width,
             default_height,
             COLORS.get("GREEN"),
