@@ -1,12 +1,15 @@
 [MESSAGES CONTROL]
 
 # Disable some pylint checks that might not be relevant for Pygame
+# and other shit that is pissing me off during developement.
 disable = missing-docstring,
           invalid-name,
           too-many-instance-attributes,
           too-few-public-methods,
           no-member,
-          import-error
+          import-error,
+          fixme,
+          duplicate-code
 
 [BASIC]
 

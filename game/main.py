@@ -37,8 +37,27 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                bullet = Bullet(hero.rect.centerx, hero.rect.top)
-                all_sprites.add(bullet)
+                if (
+                    len(
+                        [
+                            bullet
+                            for bullet in active_sprites
+                            if isinstance(bullet, Bullet)
+                        ]
+                    )
+                    >= settings.MAX_ACTIVE_BULLET_COUNT
+                ): # TODO: Replace this logic/conditional with the weapon class
+                    print("Max active bullets reached")
+                else:
+                    fire_coords = hero.get_face_midpoint()
+                    bullet = Bullet(
+                        fire_coords[0] - Bullet.default_width / 2,
+                        fire_coords[1] - Bullet.default_height,
+                        hero.get_angle(),
+                    )
+                    print(f"fire_coords: {fire_coords}")
+                    all_sprites.add(bullet)
+                    active_sprites.add(bullet)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -57,7 +76,11 @@ while running:
         # Second thought, is active attribute unnecessary? with separate groups
         # for active entities?
         if isinstance(active_entity, Bullet):
-            if active_entity.rect.y < 0:
+            if (
+                active_entity.rect.y < 0
+                or active_entity.rect.x < (0 - Bullet.default_width)
+                or active_entity.rect.x + Bullet.default_width > settings.SCREEN_WIDTH
+            ):
                 active_entity.active = False
                 all_sprites.remove(active_entity)
                 active_sprites.remove(active_entity)
@@ -103,11 +126,41 @@ while running:
     all_sprites.update()
 
     # Draw
-    screen.fill(settings.COLORS.get("BLACK"))
+    screen.fill(settings.COLORS.get("BLACK"))  # Don't move me
+
+    # Development Stage Grids
+    center_x = settings.SCREEN_WIDTH // 2
+    center_y = settings.SCREEN_HEIGHT // 2
+    pygame.draw.line(
+        screen,
+        (settings.COLORS.get("WHITE")),
+        (center_x, 0),
+        (hero.rect.x + (hero.default_width / 2), hero.rect.y + 50),
+    )
+    pygame.draw.line(
+        screen,
+        (settings.COLORS.get("BLUE")),
+        (0, settings.SCREEN_HEIGHT // 2),
+        (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT // 2),
+    )
+
     active_sprites.draw(screen)
     screen.blit(time_text, (10, 10))
     screen.blit(active_enemies_text, (10, 40))
     screen.blit(release_timer_text, (10, 70))
+
+    # Draw a small circle on the hero.rect.top to show the center face of the hero
+    pygame.draw.circle(
+        screen,
+        (settings.COLORS.get("PURPLE")),
+        (hero.get_face_midpoint()),
+        5,
+        5,
+        True,
+        True,
+        True,
+        True,
+    )
 
     pygame.display.flip()
     clock.tick(60)
