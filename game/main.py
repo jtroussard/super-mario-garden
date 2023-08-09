@@ -48,7 +48,6 @@ while running:
                     >= settings.MAX_ACTIVE_BULLET_COUNT
                 ): # TODO: Replace this logic/conditional with the weapon class
                     print("Max active bullets reached")
-                    continue
                 else:
                     fire_coords = hero.get_face_midpoint()
                     bullet = Bullet(

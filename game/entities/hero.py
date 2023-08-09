@@ -1,5 +1,4 @@
 import pygame
-import math
 from game.entities.entity import Entity
 from game.settings import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS
 from game.utils import calculate_face_midpoint
@@ -48,9 +47,9 @@ class Hero(Entity):
 
     def get_angle(self):
         return self.rot
-    
+
     def get_rendered_y_position(self):
         return SCREEN_HEIGHT - self.default_head_height
-    
+
     def get_length(self):
         return self.default_height
