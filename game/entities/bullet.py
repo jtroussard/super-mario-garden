@@ -18,6 +18,7 @@ class Bullet(Entity):
             1,
             True,
         )
+        # Important note. 0 degrees is south
         self.angle = angle
 
     def move(self):
