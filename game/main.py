@@ -18,12 +18,15 @@ pygame.display.set_caption(f"Super Mario Garden v{settings.VERSION}")
 
 all_sprites = pygame.sprite.Group()
 active_sprites = pygame.sprite.Group()
+active_enemies = pygame.sprite.Group()
+active_bullets = pygame.sprite.Group()
+
 
 hero = Hero()
 all_sprites.add(hero)
-active_sprites.add(hero)
+active_sprites.add(hero)  # For drawing and updating... I think
 
-font = pygame.font.Font(None, 36)  # You can customize the font and size
+font = pygame.font.Font(None, 36)  # Development mode only
 
 clock = pygame.time.Clock()
 
@@ -38,15 +41,10 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if (
-                    len(
-                        [
-                            bullet
-                            for bullet in active_sprites
-                            if isinstance(bullet, Bullet)
-                        ]
-                    )
+                    len(pygame.sprite.Group.sprites(active_bullets))
                     >= settings.MAX_ACTIVE_BULLET_COUNT
-                ): # TODO: Replace this logic/conditional with the weapon class
+                ):
+                    # TODO: Replace this logic/conditional with the weapon class
                     print("Max active bullets reached")
                 else:
                     fire_coords = hero.get_face_midpoint()
@@ -58,6 +56,7 @@ while running:
                     print(f"fire_coords: {fire_coords}")
                     all_sprites.add(bullet)
                     active_sprites.add(bullet)
+                    active_bullets.add(bullet)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -67,14 +66,23 @@ while running:
     if keys[pygame.K_SPACE]:
         pass
 
-    for active_entity in [
-        entity
-        for entity in pygame.sprite.Group.sprites(active_sprites)
-        if not isinstance(entity, Hero)
-    ]:
-        # Check for off board, prepare objects for garbage collection
-        # Second thought, is active attribute unnecessary? with separate groups
-        # for active entities?
+    # MOVE BULLETS AND ENEMIES
+    for active_entity in pygame.sprite.Group.sprites(active_sprites):
+        if not isinstance(active_entity, Hero):
+            active_entity.move()
+
+    # Check for off board, prepare objects for garbage collection
+    # Second thought, is active attribute unnecessary? with separate groups
+    # for active entities? UPDATE 99% sure it is not necessary, using the kill()
+    # method here, and will open an issue/branch to come back and remove the 'active'
+    # attribute concept from the entity class.
+    # ---
+    # For now the out of bounds detection is being split up by entity type
+    # because they move in opposite directions, but I have a good feeling the
+    # logic could be combined and moved into the parent class. Need to think
+    # about the edge cases. TBD.
+    # CHECK FOR OUT OF BOUNDS AND COLLISIONS IN THAT ORDER
+    for active_entity in pygame.sprite.Group.sprites(active_sprites):
         if isinstance(active_entity, Bullet):
             if (
                 active_entity.rect.y < 0
@@ -82,17 +90,20 @@ while running:
                 or active_entity.rect.x + Bullet.default_width > settings.SCREEN_WIDTH
             ):
                 active_entity.active = False
-                all_sprites.remove(active_entity)
-                active_sprites.remove(active_entity)
-        if isinstance(active_entity, Enemy):
+                active_entity.kill()
+            else:
+                contact = pygame.sprite.spritecollideany(active_entity, active_enemies)
+                if contact:
+                    active_entity.active = False
+                    active_entity.kill()
+                    contact.active = False
+                    contact.kill()
+        elif isinstance(active_entity, Enemy):
             if active_entity.rect.y > settings.SCREEN_HEIGHT:
                 active_entity.active = False
-                all_sprites.remove(active_entity)
-                active_sprites.remove(active_entity)
-        # Move active entity
-        active_entity.move()
+                active_entity.kill()
 
-    # Release enemies
+    # RELEASE ENEMIES
     active_enemies = [entity for entity in active_sprites if isinstance(entity, Enemy)]
     if current_time - last_enemy_release_time >= 3000:
         if len(active_enemies) < settings.MAX_ACTIVE_ENEMY_COUNT:
