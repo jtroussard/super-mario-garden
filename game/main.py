@@ -24,9 +24,9 @@ active_bullets = pygame.sprite.Group()
 
 hero = Hero()
 all_sprites.add(hero)
-active_sprites.add(hero) # For drawing and updating... I think
+active_sprites.add(hero)  # For drawing and updating... I think
 
-font = pygame.font.Font(None, 36) # Development mode only
+font = pygame.font.Font(None, 36)  # Development mode only
 
 clock = pygame.time.Clock()
 
@@ -40,7 +40,10 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                if (len(pygame.sprite.Group.sprites(active_bullets)) >= settings.MAX_ACTIVE_BULLET_COUNT):
+                if (
+                    len(pygame.sprite.Group.sprites(active_bullets))
+                    >= settings.MAX_ACTIVE_BULLET_COUNT
+                ):
                     # TODO: Replace this logic/conditional with the weapon class
                     print("Max active bullets reached")
                 else:
@@ -67,7 +70,7 @@ while running:
     for active_entity in pygame.sprite.Group.sprites(active_sprites):
         if not isinstance(active_entity, Hero):
             active_entity.move()
-    
+
     # Check for off board, prepare objects for garbage collection
     # Second thought, is active attribute unnecessary? with separate groups
     # for active entities? UPDATE 99% sure it is not necessary, using the kill()
@@ -76,7 +79,7 @@ while running:
     # ---
     # For now the out of bounds detection is being split up by entity type
     # because they move in opposite directions, but I have a good feeling the
-    # logic could be combined and moved into the parent class. Need to think 
+    # logic could be combined and moved into the parent class. Need to think
     # about the edge cases. TBD.
     # CHECK FOR OUT OF BOUNDS AND COLLISIONS IN THAT ORDER
     for active_entity in pygame.sprite.Group.sprites(active_sprites):
@@ -88,7 +91,6 @@ while running:
             ):
                 active_entity.active = False
                 active_entity.kill()
-                continue
             else:
                 contact = pygame.sprite.spritecollideany(active_entity, active_enemies)
                 if contact:
@@ -96,8 +98,7 @@ while running:
                     active_entity.kill()
                     contact.active = False
                     contact.kill()
-                    continue
-        if isinstance(active_entity, Enemy):
+        elif isinstance(active_entity, Enemy):
             if active_entity.rect.y > settings.SCREEN_HEIGHT:
                 active_entity.active = False
                 active_entity.kill()
