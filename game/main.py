@@ -170,8 +170,7 @@ while running:
     screen.blit(release_timer_text, (10, 70))
     if paused:
         screen.blit(dim_surface, (0, 0))
-        # pygame.time.delay(1000)
-        pygame.time.wait(1000)
+
 
     # Draw a small circle on the hero.rect.top to show the center face of the hero
     pygame.draw.circle(
