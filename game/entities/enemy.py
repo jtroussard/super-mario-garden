@@ -1,6 +1,6 @@
 # import weakref
 from game.entities.entity import Entity
-from game.settings import COLORS, SCREEN_WIDTH
+from game.settings import COLORS
 
 
 class Enemy(Entity):
@@ -25,4 +25,7 @@ class Enemy(Entity):
 
     def move(self):
         self.rect.y += self.speed
-        self.rect.x = max(0, min(self.rect.x, SCREEN_WIDTH - self.rect.width))
+    
+    def __repr__(self) -> str:
+        return f"Enemy\n\tposition:({self.rect.x}, {self.rect.y})\n\
+            speed: {self.speed}\n------"
