@@ -15,6 +15,10 @@ pygame.init()
 screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
 pygame.display.set_caption(f"Super Mario Garden v{settings.VERSION}")
 
+dim_surface = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.SRCALPHA)
+dim_alpha = 95
+dim_surface.fill((0, 0, 0, dim_alpha))
+
 
 all_sprites = pygame.sprite.Group()
 active_sprites = pygame.sprite.Group()
@@ -31,6 +35,8 @@ font = pygame.font.Font(None, 36)  # Development mode only
 clock = pygame.time.Clock()
 
 last_enemy_release_time = 0
+
+paused = False
 # Game loop
 running = True
 while running:
@@ -57,6 +63,9 @@ while running:
                     all_sprites.add(bullet)
                     active_sprites.add(bullet)
                     active_bullets.add(bullet)
+            elif event.key == pygame.K_p:
+                paused = not paused
+                print("PAUSE")
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -104,7 +113,6 @@ while running:
                 active_entity.kill()
 
     # RELEASE ENEMIES
-    active_enemies = [entity for entity in active_sprites if isinstance(entity, Enemy)]
     if current_time - last_enemy_release_time >= 3000:
         if len(active_enemies) < settings.MAX_ACTIVE_ENEMY_COUNT:
             enemy = Enemy(
@@ -112,6 +120,7 @@ while running:
             )
             all_sprites.add(enemy)
             active_sprites.add(enemy)
+            active_enemies.add(enemy)
             last_enemy_release_time = current_time
         else:
             print("Max active enemies reached")
@@ -159,6 +168,10 @@ while running:
     screen.blit(time_text, (10, 10))
     screen.blit(active_enemies_text, (10, 40))
     screen.blit(release_timer_text, (10, 70))
+    if paused:
+        screen.blit(dim_surface, (0, 0))
+        # pygame.time.delay(1000)
+        pygame.time.wait(1000)
 
     # Draw a small circle on the hero.rect.top to show the center face of the hero
     pygame.draw.circle(
