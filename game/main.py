@@ -1,180 +1,138 @@
 import sys
 import random
 import pygame
-
+import json
+from . import settings
 from game.entities.hero import Hero
 from game.entities.enemy import Enemy
 from game.entities.bullet import Bullet
+from game.collision_handler import CollisionHandler
+from game.debug_drawer import DebugDrawer
 
-# from . import levels
-# from . import utils
-from . import settings
+class Game:
+    def __init__(self, dev_mode=False):
+        """
+        Initialize the game, set up the screen, and load assets. Defaults to production mode.
+        """
+        pygame.init()
+        self.dev_mode = dev_mode
+        self.font = pygame.font.Font(None, 36)
 
-pygame.init()
+        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        pygame.display.set_caption(f"Super Mario Garden v{settings.VERSION}")
 
-screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-pygame.display.set_caption(f"Super Mario Garden v{settings.VERSION}")
+        self.clock = pygame.time.Clock()
+        self.collision_handler = CollisionHandler()
+        self.draw_debug = DebugDrawer()
 
+        self.setup_environment()
+        self.init_entities()
 
-all_sprites = pygame.sprite.Group()
-active_sprites = pygame.sprite.Group()
-active_enemies = pygame.sprite.Group()
-active_bullets = pygame.sprite.Group()
-
-
-hero = Hero()
-all_sprites.add(hero)
-active_sprites.add(hero)  # For drawing and updating... I think
-
-font = pygame.font.Font(None, 36)  # Development mode only
-
-clock = pygame.time.Clock()
-
-last_enemy_release_time = 0
-# Game loop
-running = True
-while running:
-    current_time = pygame.time.get_ticks()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if (
-                    len(pygame.sprite.Group.sprites(active_bullets))
-                    >= settings.MAX_ACTIVE_BULLET_COUNT
-                ):
-                    # TODO: Replace this logic/conditional with the weapon class
-                    print("Max active bullets reached")
-                else:
-                    fire_coords = hero.get_face_midpoint()
-                    bullet = Bullet(
-                        fire_coords[0] - Bullet.default_width / 2,
-                        fire_coords[1] - Bullet.default_height,
-                        hero.get_angle(),
-                    )
-                    print(f"fire_coords: {fire_coords}")
-                    all_sprites.add(bullet)
-                    active_sprites.add(bullet)
-                    active_bullets.add(bullet)
-
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        hero.move("left")
-    if keys[pygame.K_RIGHT]:
-        hero.move("right")
-    if keys[pygame.K_SPACE]:
-        pass
-
-    # MOVE BULLETS AND ENEMIES
-    for active_entity in pygame.sprite.Group.sprites(active_sprites):
-        if not isinstance(active_entity, Hero):
-            active_entity.move()
-
-    # Check for off board, prepare objects for garbage collection
-    # Second thought, is active attribute unnecessary? with separate groups
-    # for active entities? UPDATE 99% sure it is not necessary, using the kill()
-    # method here, and will open an issue/branch to come back and remove the 'active'
-    # attribute concept from the entity class.
-    # ---
-    # For now the out of bounds detection is being split up by entity type
-    # because they move in opposite directions, but I have a good feeling the
-    # logic could be combined and moved into the parent class. Need to think
-    # about the edge cases. TBD.
-    # CHECK FOR OUT OF BOUNDS AND COLLISIONS IN THAT ORDER
-    for active_entity in pygame.sprite.Group.sprites(active_sprites):
-        if isinstance(active_entity, Bullet):
-            if (
-                active_entity.rect.y < 0
-                or active_entity.rect.x < (0 - Bullet.default_width)
-                or active_entity.rect.x + Bullet.default_width > settings.SCREEN_WIDTH
-            ):
-                active_entity.active = False
-                active_entity.kill()
-            else:
-                contact = pygame.sprite.spritecollideany(active_entity, active_enemies)
-                if contact:
-                    active_entity.active = False
-                    active_entity.kill()
-                    contact.active = False
-                    contact.kill()
-        elif isinstance(active_entity, Enemy):
-            if active_entity.rect.y > settings.SCREEN_HEIGHT:
-                active_entity.active = False
-                active_entity.kill()
-
-    # RELEASE ENEMIES
-    active_enemies = [entity for entity in active_sprites if isinstance(entity, Enemy)]
-    if current_time - last_enemy_release_time >= 3000:
-        if len(active_enemies) < settings.MAX_ACTIVE_ENEMY_COUNT:
-            enemy = Enemy(
-                random.randint(0, settings.SCREEN_WIDTH - 30), Enemy.default_height
-            )
-            all_sprites.add(enemy)
-            active_sprites.add(enemy)
-            last_enemy_release_time = current_time
+        # These are more development variables, will organize or remove later
+        self.last_enemy_release_time = 0 # game mechanics, should organize elsewhere
+    
+    def setup_environment(self):
+        """
+        Set up the game environment based on the mode. Defaults to production mode.
+        """
+        if self.dev_mode:
+            print("Setting up dev environment")
+            # block assets, no noises, etc.
+        elif self.prod_mode:
+            print("Setting up prod environment")
+            # you can do something like load real assets here
         else:
-            print("Max active enemies reached")
+            print("No environment set") # Not sure what action to take here. Maybe a retry or define a default mode?
 
-    # DEBUGGING MESSAGES
-    # make this a dev util - pass the target variable to print, return the font
-    # render object and then make it passable into a another util that organizes
-    # the messages on the screen
-    time_text = font.render(f"Time: {current_time}", True, (255, 255, 255))
-    active_enemies_text = font.render(
-        f"Active enemies vs. All:\
-            {len(active_enemies)}/{len(pygame.sprite.Group.sprites(all_sprites))}",
-        True,
-        (255, 255, 255),
-    )
-    release_timer_text = font.render(
-        f"Release timer: {current_time - last_enemy_release_time}",
-        True,
-        (255, 255, 255),
-    )
+    def init_entities(self):
+        """
+        Initialize the game entities.
+        """
 
-    # Update
-    all_sprites.update()
+        self.all_sprites = pygame.sprite.Group()
+        self.active_sprites = pygame.sprite.Group()
+        self.active_enemies = pygame.sprite.Group()
+        self.active_bullets = pygame.sprite.Group()
 
-    # Draw
-    screen.fill(settings.COLORS.get("BLACK"))  # Don't move me
+        self.hero = Hero()
+        self.all_sprites.add(self.hero)
+        self.active_sprites.add(self.hero)  # For drawing and updating... I think
 
-    # Development Stage Grids
-    center_x = settings.SCREEN_WIDTH // 2
-    center_y = settings.SCREEN_HEIGHT // 2
-    pygame.draw.line(
-        screen,
-        (settings.COLORS.get("WHITE")),
-        (center_x, 0),
-        (hero.rect.x + (hero.default_width / 2), hero.rect.y + 50),
-    )
-    pygame.draw.line(
-        screen,
-        (settings.COLORS.get("BLUE")),
-        (0, settings.SCREEN_HEIGHT // 2),
-        (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT // 2),
-    )
+    def run(self):
+        running = True
+        while running:
+            self.current_time = pygame.time.get_ticks()
+            self.handle_events()
+            self.update()
+            self.draw()
+            self.clock.tick(60)
 
-    active_sprites.draw(screen)
-    screen.blit(time_text, (10, 10))
-    screen.blit(active_enemies_text, (10, 40))
-    screen.blit(release_timer_text, (10, 70))
+        pygame.quit()
+        sys.exit()
 
-    # Draw a small circle on the hero.rect.top to show the center face of the hero
-    pygame.draw.circle(
-        screen,
-        (settings.COLORS.get("PURPLE")),
-        (hero.get_face_midpoint()),
-        5,
-        5,
-        True,
-        True,
-        True,
-        True,
-    )
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if (
+                        len(pygame.sprite.Group.sprites(self.active_bullets))
+                        >= settings.MAX_ACTIVE_BULLET_COUNT
+                    ):
+                        # TODO: Replace this logic/conditional with the weapon class
+                        print("Max active bullets reached")
+                    else:
+                        fire_coords = self.hero.get_face_midpoint()
+                        bullet = Bullet(
+                            fire_coords[0] - Bullet.default_width / 2,
+                            fire_coords[1] - Bullet.default_height,
+                            self.hero.get_angle(),
+                        )
+                        print(f"fire_coords: {fire_coords}")
+                        self.all_sprites.add(bullet)
+                        self.active_sprites.add(bullet)
+                        self.active_bullets.add(bullet)
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            self.hero.move("left")
+        if keys[pygame.K_RIGHT]:
+            self.hero.move("right")
 
-    pygame.display.flip()
-    clock.tick(60)
+    def update(self):
+        self.move_bullets_and_enemies()
+        self.handle_collisions()
+        self.release_enemies()
 
-pygame.quit()
-sys.exit()
+    def move_bullets_and_enemies(self):
+        for active_entity in pygame.sprite.Group.sprites(self.active_sprites):
+            if not isinstance(active_entity, Hero):
+                active_entity.move()
+
+    def release_enemies(self):
+        self.active_enemies = [entity for entity in self.active_sprites if isinstance(entity, Enemy)]
+        if self.current_time - self.last_enemy_release_time >= 3000:
+            if len(self.active_enemies) < settings.MAX_ACTIVE_ENEMY_COUNT:
+                enemy = Enemy(
+                    random.randint(0, settings.SCREEN_WIDTH - 30), Enemy.default_height
+                )
+                self.all_sprites.add(enemy)
+                self.active_sprites.add(enemy)
+                self.last_enemy_release_time = self.current_time
+            else:
+                print("Max active enemies reached")
+
+    def draw(self):
+        self.screen.fill(settings.COLORS.get("BLACK"))  # Clear the screen - Don't Move Me!
+
+        if self.dev_mode:
+            self.draw_debug_mode()  # Draw debugging elements
+
+        self.active_sprites.draw(self.screen)  # Draw game entities
+        pygame.display.flip()  # Update the display
+
+    
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
